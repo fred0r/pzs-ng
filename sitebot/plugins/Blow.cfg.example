@@ -1,0 +1,121 @@
+namespace inscope ::ngBot::plugin::Blow {
+## Config Settings #####################################################
+##
+## Set the blowfish keys for each channel here. You can have as many
+## targets as you want.Per default is "CBC" encryption is used (best security).
+## Add 'ecb:' prefix in front of blowkey to enable the obselete EBC
+## Mode. (Bad choice, not recommended)
+set blowkey(#chan1)             "mYkeY1"
+set blowkey(#chan2)             "cbc:MyKey2"
+set blowkey(#chan3)             "ebc:myk3y"
+##
+## Use the blowfish key of the channel listed in mainChan for unknown
+## targets. Doesn't work when key exchanged is enabled. Case sensetive.
+## (Set to "" to disable)
+##    Example: variable mainChan "#chan1"
+variable mainChan               "#chan1"
+##
+## Max character length unencrypted. 305 is a safe bet for both
+## UnrealIrcd and Hybrid (EFnet).
+variable maxLength              305
+##
+## Split at this character. You probably want to split at spaces.
+variable splitChar              " "
+##
+## Respond to unencrypted messages. (1/true or 0/false)
+## This includes CTCP and also DCC. This means you will not
+## be able to get on the partyline via IRC.
+## Set this to false if you dont want to deal with them. (Recommended)
+variable allowUnencrypted       false
+##
+## Check for any not encrypted messages send in channel and pm
+## (1=Ignore 2=Msg 3=Kick 4=Ban or 0=Disable)
+variable plainTextSentence      2
+variable plainTextWarningMsg    "Please use Blowfish with %s Mode encryption."
+##
+## Key Exchange Settings ###############################################
+##
+## Note: All keys are stored in memory and are forgotten on
+##       rehash/reset/etc.
+##
+## Enable key exchange. (1/true or 0/false)
+variable keyx                   true
+##
+## Restrict which users are allowed to key exchange with the bot.
+## (Set to "" to disable)
+##    Example: variable keyxUsers "=siteops"
+variable keyxUsers              ""
+##
+## Respond to unencrypted private messages and initiate a key exchange
+## before replying. The data sent back will be encrypted.
+## (1/true or 0/false)
+variable keyxAllowUnencrypted true
+##
+## Time to wait in seconds for a client to complete a key exchange
+## handshake. Some older version of FiSH for mIRC can take upwards of
+## 60 seconds to reply.
+variable keyxTimeout            120
+##
+## Enable default CBC key exchange (1/true or 0/false)
+variable keyxCbc                true
+##
+## Abort keyx when receiving ECB keys (1/true or 0/false)
+## Note: If set to false, you might want to set plainTextSentence to 0 or 1
+variable keyxCbcForce           true
+##
+## Enabling ONE of these 3 methods is REQUIRED for DH key exchange to work
+## Set either fileBlowSO or fileFishPY. Using method 2 or 3 is recommended.
+##
+## 1. Original "FiSH-DH1080", set fileBlowSO "pzs-ng/plugins/DH1080_tcl.so"
+##    (and fileFishPY variable to ""). Get DH1080-source.zip and compile the .so
+##    yourself if you're a paranoid geek, needs MIRACL and tcl libs.
+##      https://web.archive.org/web/20120122020640/http://fish.secure.la
+##
+## 2. OR FiSH-irssi: same as 1. but compile using it's newer "DH1080.c"
+##    instead. No miracl needed, see second link for instructions:
+##      https://github.com/falsovsky/FiSH-irssi
+##      https://github.com/orkim/dh1080_tcl
+##
+## 3. OR weechat-fish: use included "fishwrap.py", set fileFishPY
+##    to "pzs-ng/plugins/fishwrap.py" (and set fileBlowSO variable to "").
+##    Also needs crypto module (e.g. apt install python3-pycryptodome)
+##      https://weechat.org/files/scripts/fish.py
+##
+variable fileBlowSO             ""
+variable fileFishPY             ""
+##
+## NickDb Settings #####################################################
+##
+## NickDb allows you to link IRC users to their FTP accounts. With this
+## enabled you can restrict IRC commands only to respond to specific users
+## based on their groups.
+##
+## If the following options are disabled, NickDb is NOT required.
+##
+## Only respond to trusted users. (Set to "" to disable)
+##    Example: variable trustedUsers "!=notthisgroup *"
+variable trustedUsers           ""
+##
+## Only allow these users to get/set new topics via the
+## GETTOPIC/SETTOPIC ftpd commands. (Set to "" to disable)
+##    Example: variable topicUsers "=siteops"
+variable topicUsers             ""
+##
+## TOPIC Settings ######################################################
+##
+## Above setting also related
+##
+## Set disable(SETTOPIC) to 1 if you dont want the bot to message the
+## chan with the new topic
+set ${np}::disable(SETTOPIC)    1
+set ${np}::disable(GETTOPIC)    0
+##
+## Optionally set in ngBot.conf:
+##   set ${np}::redirect(SETTOPIC)   "#chan1"
+##   set ${np}::redirect(GETTOPIC)   "#chan2"
+##
+## Trigger (Leave blank to disable)
+variable topictrigger           "!topic"
+##
+### END of Config ######################################################
+}
