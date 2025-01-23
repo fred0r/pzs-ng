@@ -173,17 +173,17 @@ main(int argc, char **argv)
 			if (allow_file_resume) {
 				d_log("zipscript-c: Broken xfer according to glftpd; ignoring because of allow_file_resume.\n");
 			} else {
-			switch (reason) {
-				 case 1:
+				switch (reason) {
+				case 1:
 					d_log("zipscript-c: glftpd says transfer was aborted; exiting early.\n");
 					break;
-				 case 2:
+				case 2:
 					d_log("zipscript-c: glftpd says an error occured during transfer; exiting early.\n");
 					break;
-				 case 3:
+				case 3:
 					d_log("zipscript-c: glftpd says disconnect/process was terminated during transfer; exiting early.\n");
 					break;
-				 default:
+				default:
 					d_log("zipscript-c: glftpd indicates an unknown error (please update zipscript-c!); exiting early.\n");
 					break;
 				}
