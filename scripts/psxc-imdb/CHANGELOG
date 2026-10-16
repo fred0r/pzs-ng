@@ -26,6 +26,13 @@ PSXC-IMDB CHANGELOG:
                               carrier in the logs dir, keeping the dir date
                               unchanged (upload-order dirlists stay intact) and
                               covering both the success and the API-error paths.
+                              The imdb info entry ([IMDB]...) and the .imdb file
+                              mtimes are preserved across re-runs as well, and
+                              the carrier path is per-PID so a concurrent run
+                              cannot clobber another run's snapshot. The old
+                              info entry is now removed with rm -rf, so a
+                              non-empty one is fully replaced instead of being
+                              nested into.
                               With the default "", the script never actively
                               touches directory timestamps
                            - Installer detects required binaries (bash 4+, jq,

@@ -275,16 +275,20 @@ strip_glroot() {
   fi
 }
 
-# Resolve the FIXDIRTIME mtime-snapshot carrier path for the current context.
+# Resolve a FIXDIRTIME mtime-snapshot carrier path for the current context.
 # The conf's TMPFILE is a host-style path (GLROOT-prefixed); chrooted runs must
 # use the GLROOT-stripped form, host runs the host form. Pick whichever
-# actually resolves here.
-# Usage: DIRDATE_CARRIER=$(imdb_dirdate_carrier)
+# actually resolves here. The path includes the PID so a concurrent run cannot
+# clobber another run's carrier. An optional suffix (default "dirdate")
+# distinguishes the release-dir / info-dir / .imdb carriers.
+# Usage: DIRDATE_CARRIER=$(imdb_dirdate_carrier)          # ...$$.dirdate
+#        INFOTIME_CARRIER=$(imdb_dirdate_carrier infotime)
 imdb_dirdate_carrier() {
+  local suffix="${1:-dirdate}"
   if [ -d "$(dirname "$TMPFILE")" ]; then
-    echo "${TMPFILE}.dirdate"
+    echo "${TMPFILE}.$$.${suffix}"
   else
-    echo "$(strip_glroot "$TMPFILE").dirdate"
+    echo "$(strip_glroot "$TMPFILE").$$.${suffix}"
   fi
 }
 

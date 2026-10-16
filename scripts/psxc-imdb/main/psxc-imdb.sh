@@ -20,9 +20,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 imdb_set_defaults
 imdb_load_config || exit 0
 
-# FIXDIRTIME mtime-snapshot carrier, resolved for this run's context
-# (chrooted vs host) so the snapshot/restore works in both.
-DIRDATE_CARRIER="$(imdb_dirdate_carrier)"
+# FIXDIRTIME mtime-snapshot carriers, resolved for this run's context
+# (chrooted vs host) so the snapshot/restore works in both. The path carries
+# the PID so a concurrent run cannot clobber another run's snapshot.
+DIRDATE_CARRIER="$(imdb_dirdate_carrier dirdate)"
+INFOTIME_CARRIER="$(imdb_dirdate_carrier infotime)"
+IMDTIME_CARRIER="$(imdb_dirdate_carrier imdbtime)"
 
 # Start debugging
 if [ "$DEBUG" = "ON" ] || [ "$DEBUG" = "2" ]; then
@@ -100,8 +103,16 @@ if [ ! -z "$RECVDARGS" ]; then
      imdb_queue_lookup "$IMDBURL" "$PWD" "$IMDBLOGCHROOTED"
     if [ ! -z "$DOTIMDB" ]; then
      if [ ! -e "$DOTIMDB" ] || [ -w "$DOTIMDB" ]; then
+      # Preserve the .imdb file's mtime across the truncation (FIXDIRTIME gated).
+      if [ ! -z "$FIXDIRTIME" ] && [ -f "$DOTIMDB" ]; then
+       touch -r "$DOTIMDB" "$IMDTIME_CARRIER" >/dev/null 2>&1
+      fi
       echo -n "" > $DOTIMDB
       chmod 666 $DOTIMDB
+      if [ -f "$IMDTIME_CARRIER" ]; then
+       touch -r "$IMDTIME_CARRIER" "$DOTIMDB" >/dev/null 2>&1
+       rm -f "$IMDTIME_CARRIER" >/dev/null 2>&1
+      fi
      fi
     fi
     if [ ! -z "$DOTURL" ]; then
@@ -757,6 +768,10 @@ if [ ! -z "$RUNCONTINOUS" ] || [ -z "$RECVDARGS" ]; then
 # Echo stuff to the .imdb file
 ##############################
 
+    # Preserve the .imdb file's mtime across the rewrite (FIXDIRTIME gated).
+    if [ ! -z "$FIXDIRTIME" ] && [ -f "$IMDBLNK" ]; then
+     touch -r "$IMDBLNK" "$IMDTIME_CARRIER" >/dev/null 2>&1
+    fi
     printf "%b\n" "$IMDBHEAD" > "$IMDBLNK"
     OWNER=$(ls -1nl "$GLROOT$IMDBLKL" | tail -n 1 | { read junk junk owner group junk; echo "$owner:$group"; };)
     echo "Title........: $TITLE" | fold -s -w "$IMDBWIDTH" | head -n 1 >> "$IMDBLNK"
@@ -817,6 +832,10 @@ if [ ! -z "$RUNCONTINOUS" ] || [ -z "$RECVDARGS" ]; then
      echo "$COMMENT" | sed "s/^\ *//g" | sed "s/\ *$//g" | tr -s ' ' | fold -s -w "$IMDBWIDTH" >> "$IMDBLNK"
     fi
     printf "%b\n" "$IMDBTAIL" >> "$IMDBLNK"
+    if [ -f "$IMDTIME_CARRIER" ]; then
+     touch -r "$IMDTIME_CARRIER" "$IMDBLNK" >/dev/null 2>&1
+     rm -f "$IMDTIME_CARRIER" >/dev/null 2>&1
+    fi
    fi
 
    if [ ! -z "$INFOTEMPNAME" ] && [ -e "$GLROOT$IMDBLKL/$INFOTEMPNAME" ]; then
@@ -849,14 +868,26 @@ if [ ! -z "$RUNCONTINOUS" ] || [ -z "$RECVDARGS" ]; then
     INFOFILENAMEOLDB="$(echo "$INFOFILENAMEOLDA" | tr '\]\[' '.')"
     INFOFILENAMEPRINT="$(echo "$INFOFILENAME" | sed "s%VOTES%$VOTESFILE%g" | sed "s%SCORE%$SCOREFILE%g" | sed "s%GENRE%$GENREFILE%g" | sed "s%RUNTIME%$RUNTIMEFILE%g" | sed "s%YEAR%$TITLEYEAR%g" | sed "s%ISLIMITED%$LIMITEDFILE%g" | sed "s%SCREENS%$NUMSCREENS%g")"
     INFOFILENAMEPRINT="$(echo "$INFOFILENAMEPRINT" | tr -c "$INFOVALID" "$INFOCHARTO")"
+    # Preserve the existing info entry's mtime across the rename (FIXDIRTIME
+    # gated): snapshot it before the old entry is removed and apply it to the
+    # new one after the mv, so a re-run/rescan does not change the info date.
+    if [ ! -z "$FIXDIRTIME" ]; then
+     OLDINFO="$(ls -1 "$GLROOT$IMDBLKL" | grep -e "$INFOFILENAMEOLDB" | head -n 1)"
+     if [ ! -z "$OLDINFO" ] && [ -e "$GLROOT$IMDBLKL/$OLDINFO" ]; then
+      touch -r "$GLROOT$IMDBLKL/$OLDINFO" "$INFOTIME_CARRIER" >/dev/null 2>&1
+     fi
+    fi
     if [ ! -z "$(ls -1 "$GLROOT$IMDBLKL" | grep -e "$INFOFILENAMEOLDB")" ]; then
      for OLDINFOFILE in $(ls -1  "$GLROOT$IMDBLKL" | grep -e "$INFOFILENAMEOLDB" | tr ' ' '^'); do
       OLDINFOFILE="$(echo "$OLDINFOFILE" | tr '^' ' ')"
-      rm -f "$GLROOT$IMDBLKL/$OLDINFOFILE" >/dev/null 2>&1
-      rmdir "$GLROOT$IMDBLKL/$OLDINFOFILE" >/dev/null 2>&1
+      rm -rf "$GLROOT$IMDBLKL/$OLDINFOFILE" >/dev/null 2>&1
      done
     fi
     mv "$GLROOT$IMDBLKL/$INFOTEMPNAME" "$GLROOT$IMDBLKL/$INFOFILENAMEPRINT"
+    if [ -f "$INFOTIME_CARRIER" ]; then
+     touch -r "$INFOTIME_CARRIER" "$GLROOT$IMDBLKL/$INFOFILENAMEPRINT" >/dev/null 2>&1
+     rm -f "$INFOTIME_CARRIER" >/dev/null 2>&1
+    fi
    fi
 
 # create a thumbnail?
